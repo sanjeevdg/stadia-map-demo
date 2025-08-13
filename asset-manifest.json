@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/stadia-map-demo/static/css/main.323d7611.css",
+    "main.js": "/stadia-map-demo/static/js/main.4ab4b750.js",
+    "static/js/453.8ecc8c78.chunk.js": "/stadia-map-demo/static/js/453.8ecc8c78.chunk.js",
+    "index.html": "/stadia-map-demo/index.html",
+    "main.323d7611.css.map": "/stadia-map-demo/static/css/main.323d7611.css.map",
+    "main.4ab4b750.js.map": "/stadia-map-demo/static/js/main.4ab4b750.js.map",
+    "453.8ecc8c78.chunk.js.map": "/stadia-map-demo/static/js/453.8ecc8c78.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.323d7611.css",
+    "static/js/main.4ab4b750.js"
+  ]
+}
