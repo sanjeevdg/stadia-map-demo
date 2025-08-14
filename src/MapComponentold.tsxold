@@ -1,0 +1,37 @@
+// src/MapComponent.tsx
+import React from 'react';
+import { MapContainer, TileLayer, LayersControl } from 'react-leaflet';
+import { MapLibreTileLayer } from './MapLibreTileLayer';
+
+const { BaseLayer } = LayersControl;
+
+const MAP_CENTER: [number, number] = [51.505, -0.09];
+const MAP_ZOOM = 13;
+
+const STADIA_RASTER_URL =
+  'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png';
+const STADIA_ATTR =
+  '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>, ' +
+  '&copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> ' +
+  '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors';
+
+const STADIA_VECTOR_STYLE_URL =
+  'https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json';
+
+export default function MapComponent() {
+  return (
+    <MapContainer center={MAP_CENTER} zoom={MAP_ZOOM} style={{ height: '100vh' }}>
+      <LayersControl position="topright">
+        <BaseLayer checked name="Raster">
+          <TileLayer url={STADIA_RASTER_URL} attribution={STADIA_ATTR} />
+        </BaseLayer>
+        <BaseLayer name="Vector">
+          <MapLibreTileLayer
+            url={STADIA_VECTOR_STYLE_URL}
+            attribution={STADIA_ATTR}
+          />
+        </BaseLayer>
+      </LayersControl>
+    </MapContainer>
+  );
+}

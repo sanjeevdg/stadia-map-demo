@@ -1,0 +1,26 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Bengaluru" },
+      "geometry": { "type": "Point", "coordinates": [77.5946, 12.9716] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Sample Line" },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[77.5946, 12.9716], [80.2707, 13.0827]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Sample Polygon" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[77.5, 12.9], [77.8, 13.0], [77.9, 12.8], [77.5, 12.9]]]
+      }
+    }
+  ]
+}

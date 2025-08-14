@@ -1,0 +1,136 @@
+import React, { useMemo, useEffect, useState } from 'react'
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  Polyline,
+  Polygon,
+  LayersControl,
+  ScaleControl,
+} from 'react-leaflet'
+import L from 'leaflet'
+import { createLayerComponent } from '@react-leaflet/core'
+import 'leaflet/dist/leaflet.css'
+import maplibregl from 'maplibre-gl'
+import '@maplibre/maplibre-gl-leaflet'
+
+// Fix Leaflet marker icons
+delete L.Icon.Default.prototype._getIconUrl
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+})
+
+// Stadia Maps API key
+const STADIA_API_KEY =
+  import.meta.env?.VITE_STADIA_API_KEY ||
+  process.env?.STADIA_API_KEY ||
+  'b1eaa277-afbb-4968-b2de-a804eb44d959'
+
+// Wrap MapLibre layer for React-Leaflet
+const createMapLibreLayer = (props, context) => {
+  const { styleUrl, attribution, interactive = true } = props
+  const layer = L.maplibreGL({
+    style: styleUrl,
+    attribution,
+    interactive,
+    maplibreOptions: { maplibregl },
+  })
+  return { instance: layer, context }
+}
+const updateMapLibreLayer = (instance, props, prevProps) => {
+  if (props.styleUrl !== prevProps.styleUrl) {
+    instance.getMaplibreMap()?.setStyle(props.styleUrl)
+  }
+  return null
+}
+const MapLibreLayer = createLayerComponent(createMapLibreLayer, updateMapLibreLayer)
+
+export default function StadiaGeoJSONMap() {
+  const center = [20.5937, 78.9629] // India
+
+  const rasterUrl = `https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png?api_key=${STADIA_API_KEY}`
+  const attribution =
+    "&copy; <a href='https://stadiamaps.com/'>Stadia Maps</a>, &copy; <a href='https://openmaptiles.org/'>OpenMapTiles</a> &copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
+  const vectorStyle = `https://tiles.stadiamaps.com/styles/alidade_smooth.json?api_key=${STADIA_API_KEY}`
+
+  const [geojsonData, setGeojsonData] = useState(null)
+
+  // Load GeoJSON (could also import locally)
+  useEffect(() => {
+    fetch('./my-map-data.geojson') // replace with your file path or URL
+      .then((res) => res.json())
+      .then((data) => setGeojsonData(data))
+      .catch((err) => console.error('GeoJSON load error:', err))
+  }, [])
+
+  return (
+    <div style={{ width: '100%', height: '80vh' }}>
+      <MapContainer center={center} zoom={5} scrollWheelZoom style={{ height: '100%', width: '100%' }}>
+        <ScaleControl position="bottomleft" />
+        <LayersControl position="topright">
+          <LayersControl.BaseLayer checked name="Stadia Raster">
+            <TileLayer url={rasterUrl} attribution={attribution} />
+          </LayersControl.BaseLayer>
+
+          <LayersControl.BaseLayer name="Stadia Vector (MapLibre)">
+            <MapLibreLayer styleUrl={vectorStyle} attribution={attribution} />
+          </LayersControl.BaseLayer>
+
+          {geojsonData && (
+            <>
+              <LayersControl.Overlay checked name="GeoJSON Markers">
+                <div>
+                  {geojsonData.features
+                    .filter((f) => f.geometry.type === 'Point')
+                    .map((f, i) => (
+                      <Marker
+                        key={i}
+                        position={[f.geometry.coordinates[1], f.geometry.coordinates[0]]}
+                      >
+                        <Popup>
+                          <b>{f.properties?.name || 'Unnamed'}</b>
+                          <br />
+                          {JSON.stringify(f.properties)}
+                        </Popup>
+                      </Marker>
+                    ))}
+                </div>
+              </LayersControl.Overlay>
+
+              <LayersControl.Overlay checked name="GeoJSON Lines">
+                <div>
+                  {geojsonData.features
+                    .filter((f) => f.geometry.type === 'LineString')
+                    .map((f, i) => (
+                      <Polyline
+                        key={i}
+                        positions={f.geometry.coordinates.map((c) => [c[1], c[0]])}
+                      />
+                    ))}
+                </div>
+              </LayersControl.Overlay>
+
+              <LayersControl.Overlay checked name="GeoJSON Polygons">
+                <div>
+                  {geojsonData.features
+                    .filter((f) => f.geometry.type === 'Polygon')
+                    .map((f, i) => (
+                      <Polygon
+                        key={i}
+                        positions={f.geometry.coordinates.map((ring) =>
+                          ring.map((c) => [c[1], c[0]])
+                        )}
+                      />
+                    ))}
+                </div>
+              </LayersControl.Overlay>
+            </>
+          )}
+        </LayersControl>
+      </MapContainer>
+    </div>
+  )
+}
