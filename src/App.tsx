@@ -4,10 +4,10 @@ import {
   TileLayer,
   Marker,
   Popup,
-  Polyline,
   Polygon,
   LayersControl,
   ScaleControl,
+  useMapEvents,
 } from 'react-leaflet'
 import L, { Layer, LatLngTuple } from 'leaflet'
 import { createLayerComponent } from '@react-leaflet/core'
@@ -15,7 +15,7 @@ import 'leaflet/dist/leaflet.css'
 import maplibregl from 'maplibre-gl'
 import '@maplibre/maplibre-gl-leaflet'
 
-// Fix default Leaflet marker icons
+// Fix default marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:
@@ -50,7 +50,6 @@ const MapLibreLayer = createLayerComponent<Layer, any>(
   updateMapLibreLayer
 )
 
-// --- GeoJSON Types ---
 interface GeoJSONFeature {
   type: string
   geometry: { type: string; coordinates: any }
@@ -62,24 +61,27 @@ interface GeoJSONData {
   features: GeoJSONFeature[]
 }
 
-// --- Hardcoded Markers ---
-const extraMarkers = [
-  {
-    name: 'New York City',
-    coords: [40.7128, -74.006] as LatLngTuple,
-    desc: 'The Big Apple 🍎',
-  },
-  {
-    name: 'Los Angeles',
-    coords: [34.0522, -118.2437] as LatLngTuple,
-    desc: 'City of Angels 🌴',
-  },
-  {
-    name: 'Chicago',
-    coords: [41.8781, -87.6298] as LatLngTuple,
-    desc: 'Windy City 🌬️',
-  },
-]
+interface UserMarker {
+  coords: LatLngTuple
+  caption: string
+}
+
+// Component for handling map clicks
+function AddMarkerOnClick({
+  onAddMarker,
+}: {
+  onAddMarker: (coords: LatLngTuple, caption: string) => void
+}) {
+  useMapEvents({
+    click(e) {
+      const caption = prompt('Enter a caption for this marker:')
+      if (caption && caption.trim() !== '') {
+        onAddMarker([e.latlng.lat, e.latlng.lng], caption.trim())
+      }
+    },
+  })
+  return null
+}
 
 export default function StadiaGeoJSONMapRemote() {
   const center = useMemo<LatLngTuple>(() => [37.8, -96], [])
@@ -92,6 +94,7 @@ export default function StadiaGeoJSONMapRemote() {
   const [geojsonData, setGeojsonData] = useState<GeoJSONData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [userMarkers, setUserMarkers] = useState<UserMarker[]>([])
 
   const geojsonUrl =
     'https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json'
@@ -113,6 +116,10 @@ export default function StadiaGeoJSONMapRemote() {
       })
   }, [geojsonUrl])
 
+  const handleAddMarker = (coords: LatLngTuple, caption: string) => {
+    setUserMarkers((prev) => [...prev, { coords, caption }])
+  }
+
   return (
     <div style={{ width: '100%', height: '80vh' }}>
       {loading && <div>Loading map data...</div>}
@@ -125,6 +132,8 @@ export default function StadiaGeoJSONMapRemote() {
         style={{ height: '100%', width: '100%' }}
       >
         <ScaleControl position="bottomleft" />
+        <AddMarkerOnClick onAddMarker={handleAddMarker} />
+
         <LayersControl position="topright">
           <LayersControl.BaseLayer checked name="Stadia Raster">
             <TileLayer url={rasterUrl} attribution={attribution} />
@@ -134,15 +143,13 @@ export default function StadiaGeoJSONMapRemote() {
             <MapLibreLayer styleUrl={vectorStyle} attribution={attribution} />
           </LayersControl.BaseLayer>
 
-          {/* Hardcoded Markers */}
-          <LayersControl.Overlay checked name="Extra Markers">
+          {/* User-Added Markers */}
+          <LayersControl.Overlay checked name="User Markers">
             <div>
-              {extraMarkers.map((m, i) => (
+              {userMarkers.map((m, i) => (
                 <Marker key={i} position={m.coords}>
                   <Popup>
-                    <b>{m.name}</b>
-                    <br />
-                    {m.desc}
+                    <b>{m.caption}</b>
                     <br />
                     {m.coords[0].toFixed(4)}, {m.coords[1].toFixed(4)}
                   </Popup>
